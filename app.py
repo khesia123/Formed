@@ -34,7 +34,9 @@ def load_data():
     # 6) Lê todas as abas
     sheets = {}
     for ws in spreadsheet.worksheets():
-        df = pd.DataFrame(ws.get_all_records())
+        # 🔑 Forçar headers (ajuste conforme os nomes reais das colunas da sua planilha)
+        expected_headers = ["NOME", "EMAIL", "GRUPO", "DATA", "SATISFAÇÃO DO CLIENTE", "QUALIDADE DO LEAD", "CAMPANHA ESTÁ ATIVA?"]
+        df = pd.DataFrame(ws.get_all_records(expected_headers=expected_headers))
         sheets[ws.title] = df
     return sheets
 
