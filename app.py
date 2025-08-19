@@ -34,8 +34,22 @@ def load_data():
     # 6) Lê todas as abas
     sheets = {}
     for ws in spreadsheet.worksheets():
-        # 🔑 Forçar headers (ajuste conforme os nomes reais das colunas da sua planilha)
-        expected_headers = ["NOME", "EMAIL", "GRUPO", "DATA", "SATISFAÇÃO DO CLIENTE", "QUALIDADE DO LEAD", "CAMPANHA ESTÁ ATIVA?"]
+        # 🔑 Forçar headers (igual à linha 1 da planilha)
+        expected_headers = [
+            "CONTROLE DE GRUPOS FORMED",
+            "MANDA MENSAGEM?",
+            "CAMPANHA ESTÁ ATIVA?",
+            "TIPO DE CAMPANHA",
+            "CHEGOU MSG HJ?",
+            "QUALIDADE DO LEAD",
+            "ESTÁ ENGAJANDO NO GRUPO?",
+            "DEMANDA ATUAL",
+            "SATISFAÇÃO DO CLIENTE",
+            "NECESSIDADE DE CALL DE ANTECIPAÇÃO",
+            "ÚLTIMA ATUALIZAÇÃO DA PLANILHA",
+            "SITUAÇÃO QUANDO O CLIENTE ENTROU",
+            "OBJETIVO DO CLIENTE"
+        ]
         df = pd.DataFrame(ws.get_all_records(expected_headers=expected_headers))
         sheets[ws.title] = df
     return sheets
