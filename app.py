@@ -16,8 +16,8 @@ def load_data():
     # Autentica no Google Sheets
     client = gspread.authorize(credentials)
     
-    # Abre a planilha
-    spreadsheet = client.open("CONTROLE DE GRUPO")  # <-- coloque o nome EXATO da sua planilha no Google Drive
+    # Abre a planilha pelo ID
+    spreadsheet = client.open_by_key("1y5-ZqLwmS50rqKeC1RlH3qlL7z359aG0c34nQdd69RM")
     
     sheets = {}
     for worksheet in spreadsheet.worksheets():
