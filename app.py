@@ -1,59 +1,65 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import gspread
+from google.oauth2.service_account import Credentials
 
 # ---------------------------
-# Carregar planilha
+# Conectar ao Google Sheets
 # ---------------------------
 @st.cache_data
-def load_data(file):
-    xls = pd.ExcelFile(file)
+def load_data():
+    # Lê as credenciais do secrets
+    creds_dict = st.secrets["gcp_service_account"]
+    credentials = Credentials.from_service_account_info(creds_dict)
+    
+    # Autentica no Google Sheets
+    client = gspread.authorize(credentials)
+    
+    # Abre a planilha
+    spreadsheet = client.open("CONTROLE DE GRUPO")  # <-- coloque o nome EXATO da sua planilha no Google Drive
+    
     sheets = {}
-    for sheet in xls.sheet_names:
-        df = pd.read_excel(file, sheet_name=sheet)
-        # Corrigir cabeçalho (primeira linha como nomes de coluna)
-        df.columns = df.iloc[0]
-        df = df.drop(0).reset_index(drop=True)
-        sheets[sheet] = df
+    for worksheet in spreadsheet.worksheets():
+        df = pd.DataFrame(worksheet.get_all_records())
+        sheets[worksheet.title] = df
     return sheets
 
+
+# ---------------------------
+# Configuração inicial
+# ---------------------------
 st.set_page_config(page_title="Painel de Controle de Grupos", layout="wide")
 
 st.title("📊 Painel de Controle de Grupos")
 
-# Upload do arquivo
-uploaded_file = st.file_uploader("Carregue a planilha Excel", type=["xlsx"])
+# Carregar dados
+data = load_data()
 
-if uploaded_file:
-    data = load_data(uploaded_file)
+# Menu lateral para escolher aba
+sheet_name = st.sidebar.selectbox("Escolha a aba", list(data.keys()))
 
-    # Menu lateral para escolher aba
-    sheet_name = st.sidebar.selectbox("Escolha a aba", list(data.keys()))
+df = data[sheet_name]
+st.subheader(f"📂 Dados da aba: {sheet_name}")
+st.dataframe(df, use_container_width=True)
 
-    df = data[sheet_name]
-    st.subheader(f"📂 Dados da aba: {sheet_name}")
-    st.dataframe(df, use_container_width=True)
+# ---------------------------
+# Gráficos básicos
+# ---------------------------
+if "SATISFAÇÃO DO CLIENTE" in df.columns:
+    st.subheader("📌 Satisfação dos Clientes")
+    fig, ax = plt.subplots()
+    df["SATISFAÇÃO DO CLIENTE"].value_counts().plot(kind="bar", ax=ax)
+    st.pyplot(fig)
 
-    # ---------------------------
-    # Gráficos básicos
-    # ---------------------------
-    if "SATISFAÇÃO DO CLIENTE" in df.columns:
-        st.subheader("📌 Satisfação dos Clientes")
-        fig, ax = plt.subplots()
-        df["SATISFAÇÃO DO CLIENTE"].value_counts().plot(kind="bar", ax=ax)
-        st.pyplot(fig)
+if "QUALIDADE DO LEAD" in df.columns:
+    st.subheader("📌 Qualidade dos Leads")
+    fig, ax = plt.subplots()
+    df["QUALIDADE DO LEAD"].value_counts().plot(kind="bar", ax=ax)
+    st.pyplot(fig)
 
-    if "QUALIDADE DO LEAD" in df.columns:
-        st.subheader("📌 Qualidade dos Leads")
-        fig, ax = plt.subplots()
-        df["QUALIDADE DO LEAD"].value_counts().plot(kind="bar", ax=ax)
-        st.pyplot(fig)
-
-    if "CAMPANHA ESTÁ ATIVA?" in df.columns:
-        st.subheader("📌 Status das Campanhas")
-        fig, ax = plt.subplots()
-        df["CAMPANHA ESTÁ ATIVA?"].value_counts().plot(kind="bar", ax=ax)
-        st.pyplot(fig)
-
-else:
-    st.info("⬆️ Faça o upload da planilha para visualizar os dados.")
+if "CAMPANHA ESTÁ ATIVA?" in df.columns:
+    st.subheader("📌 Status das Campanhas")
+    fig, ax = plt.subplots()
+    df["CAMPANHA ESTÁ ATIVA?"].value_counts().plot(kind="bar", ax=ax)
+    st.pyplot(fig)
