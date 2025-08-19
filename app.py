@@ -34,23 +34,10 @@ def load_data():
     # 6) Lê todas as abas
     sheets = {}
     for ws in spreadsheet.worksheets():
-        # 🔑 Forçar headers iguais à linha 1
-        expected_headers = [
-            "CONTROLE DE GRUPOS FORMED",
-            "MANDA MENSAGEM?",
-            "CAMPANHA ESTÁ ATIVA?",
-            "TIPO DE CAMPANHA",
-            "CHEGOU MSG HJ?",
-            "QUALIDADE DO LEAD",
-            "ESTÁ ENGAJANDO NO GRUPO?",
-            "DEMANDA ATUAL",
-            "SATISFAÇÃO DO CLIENTE",
-            "NECESSIDADE DE CALL DE ANTECIPAÇÃO",
-            "ÚLTIMA ATUALIZAÇÃO DA PLANILHA",
-            "SITUAÇÃO QUANDO O CLIENTE ENTROU",
-            "OBJETIVO DO CLIENTE"
-        ]
-        df = pd.DataFrame(ws.get_all_records(expected_headers=expected_headers))
+        # Pega header diretamente da 1ª linha da planilha
+        header = ws.row_values(1)
+        data = ws.get_all_records(expected_headers=header)
+        df = pd.DataFrame(data)
         sheets[ws.title] = df
     return sheets
 
@@ -76,4 +63,18 @@ df = data[sheet_name]
 st.subheader(f"📂 Dados da aba: {sheet_name}")
 st.dataframe(df, use_container_width=True)
 
-# --- Gráficos Automá
+# --- Função para gráficos ---
+def plot_column(df, column, titulo):
+    if column in df.columns:
+        st.subheader(titulo)
+        fig, ax = plt.subplots()
+        df[column].value_counts().plot(kind="bar", ax=ax)
+        st.pyplot(fig)
+
+# --- Gráficos ---
+plot_column(df, "SATISFAÇÃO DO CLIENTE", "📌 Satisfação dos Clientes")
+plot_column(df, "QUALIDADE DO LEAD", "📌 Qualidade dos Leads")
+plot_column(df, "CAMPANHA ESTÁ ATIVA?", "📌 Status das Campanhas")
+plot_column(df, "ESTÁ ENGAJANDO NO GRUPO?", "📌 Engajamento no Grupo")
+plot_column(df, "DEMANDA ATUAL", "📌 Demanda Atual")
+plot_column(df, "NECESSIDADE DE CALL DE ANTECIPAÇÃO", "📌 Necessidade de Call de Antecipação")
