@@ -8,7 +8,6 @@ from google.auth.transport.requests import Request
 st.set_page_config(page_title="Painel de Controle de Grupos", layout="wide")
 st.title("📊 Painel de Controle de Grupos")
 
-# Escopos obrigatórios
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
@@ -16,30 +15,29 @@ SCOPES = [
 
 @st.cache_data(show_spinner="Conectando ao Google…")
 def load_data():
-    # 1) Lê credenciais do secrets
+    # 1) Credenciais do secrets
     creds_dict = st.secrets["gcp_service_account"]
 
-    # 2) Cria credenciais com scopes
+    # 2) Credenciais com scopes
     credentials = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-    # 3) Atualiza token (evita erros de Refresh)
+    # 3) Força refresh do token (útil para diagnosticar erros)
     credentials.refresh(Request())
 
     # 4) Autoriza gspread
     client = gspread.authorize(credentials)
 
-    # 5) Abre a planilha usando o ID do secrets
+    # 5) Abre a planilha pelo ID guardado em [app]
     sheet_id = st.secrets["app"]["SHEET_ID"]
     spreadsheet = client.open_by_key(sheet_id)
 
-    # 6) Lê todas as abas da planilha
+    # 6) Lê todas as abas
     sheets = {}
     for ws in spreadsheet.worksheets():
         df = pd.DataFrame(ws.get_all_records())
         sheets[ws.title] = df
     return sheets
 
-# --- Tratamento de erros ---
 try:
     data = load_data()
 except Exception as e:
@@ -48,14 +46,14 @@ except Exception as e:
         st.exception(e)
     st.info(
         "Verifique:\n"
-        "1) Secrets TOML no formato correto (private_key com \\n).\n"
-        "2) Conta de serviço tem acesso à planilha.\n"
-        "3) Google Sheets API e Drive API estão ativadas.\n"
-        "4) Nenhum JSON foi enviado para o GitHub (use apenas Secrets no Streamlit Cloud)."
+        "1) Secrets TOML no formato acima (private_key com \\n).\n"
+        "2) Planilha compartilhada com a conta de serviço como Editor.\n"
+        "3) Google Sheets API e Google Drive API habilitadas no GCP.\n"
+        "4) Nenhum JSON com segredo foi comitado no GitHub."
     )
     st.stop()
 
-# --- Interface ---
+# --- UI ---
 sheet_name = st.sidebar.selectbox("Escolha a aba", list(data.keys()))
 df = data[sheet_name]
 
