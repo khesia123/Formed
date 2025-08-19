@@ -21,7 +21,7 @@ def load_data():
     # 2) Credenciais com scopes
     credentials = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-    # 3) Força refresh do token (útil para diagnosticar erros)
+    # 3) Força refresh do token
     credentials.refresh(Request())
 
     # 4) Autoriza gspread
@@ -34,7 +34,7 @@ def load_data():
     # 6) Lê todas as abas
     sheets = {}
     for ws in spreadsheet.worksheets():
-        # 🔑 Forçar headers (igual à linha 1 da planilha)
+        # 🔑 Forçar headers iguais à linha 1
         expected_headers = [
             "CONTROLE DE GRUPOS FORMED",
             "MANDA MENSAGEM?",
@@ -76,20 +76,4 @@ df = data[sheet_name]
 st.subheader(f"📂 Dados da aba: {sheet_name}")
 st.dataframe(df, use_container_width=True)
 
-if "SATISFAÇÃO DO CLIENTE" in df.columns:
-    st.subheader("📌 Satisfação dos Clientes")
-    fig, ax = plt.subplots()
-    df["SATISFAÇÃO DO CLIENTE"].value_counts().plot(kind="bar", ax=ax)
-    st.pyplot(fig)
-
-if "QUALIDADE DO LEAD" in df.columns:
-    st.subheader("📌 Qualidade dos Leads")
-    fig, ax = plt.subplots()
-    df["QUALIDADE DO LEAD"].value_counts().plot(kind="bar", ax=ax)
-    st.pyplot(fig)
-
-if "CAMPANHA ESTÁ ATIVA?" in df.columns:
-    st.subheader("📌 Status das Campanhas")
-    fig, ax = plt.subplots()
-    df["CAMPANHA ESTÁ ATIVA?"].value_counts().plot(kind="bar", ax=ax)
-    st.pyplot(fig)
+# --- Gráficos Automá
