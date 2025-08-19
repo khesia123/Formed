@@ -3,49 +3,63 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import gspread
 from google.oauth2.service_account import Credentials
+from google.auth.transport.requests import Request
 
-# ---------------------------
-# Conectar ao Google Sheets
-# ---------------------------
-@st.cache_data
-def load_data():
-    # Lê as credenciais do secrets
-    creds_dict = st.secrets["gcp_service_account"]
-    credentials = Credentials.from_service_account_info(creds_dict)
-    
-    # Autentica no Google Sheets
-    client = gspread.authorize(credentials)
-    
-    # Abre a planilha pelo ID
-    spreadsheet = client.open_by_key("1y5-ZqLwmS50rqKeC1RlH3qlL7z359aG0c34nQdd69RM")
-    
-    sheets = {}
-    for worksheet in spreadsheet.worksheets():
-        df = pd.DataFrame(worksheet.get_all_records())
-        sheets[worksheet.title] = df
-    return sheets
-
-
-# ---------------------------
-# Configuração inicial
-# ---------------------------
 st.set_page_config(page_title="Painel de Controle de Grupos", layout="wide")
-
 st.title("📊 Painel de Controle de Grupos")
 
-# Carregar dados
-data = load_data()
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
 
-# Menu lateral para escolher aba
+@st.cache_data(show_spinner="Conectando ao Google…")
+def load_data():
+    # 1) Lê credenciais do secrets (formato TOML)
+    creds_dict = st.secrets["gcp_service_account"]
+
+    # 2) Cria credenciais COM SCOPES
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
+    # (Opcional mas ótimo para diagnosticar RefreshError)
+    credentials.refresh(Request())  # dispara o token; se falhar, cai no except
+
+    # 3) Autoriza gspread
+    client = gspread.authorize(credentials)
+
+    # 4) Abre a planilha pelo ID guardado em [app]
+    sheet_id = st.secrets["app"]["SHEET_ID"]
+    spreadsheet = client.open_by_key(sheet_id)
+
+    # 5) Lê todas as abas
+    sheets = {}
+    for ws in spreadsheet.worksheets():
+        df = pd.DataFrame(ws.get_all_records())
+        sheets[ws.title] = df
+    return sheets
+
+try:
+    data = load_data()
+except Exception as e:
+    st.error("❌ Falha para autenticar/ler a planilha.")
+    with st.expander("Ver detalhes do erro (para correção)"):
+        st.exception(e)
+    st.info(
+        "Verifique:\n"
+        "1) Secrets TOML no formato acima (principalmente private_key com \\n).\n"
+        "2) E-mail da conta de serviço é o MESMO no secrets e no compartilhamento da planilha.\n"
+        "3) Google Sheets API e Google Drive API estão habilitadas no GCP.\n"
+        "4) Você não subiu o JSON para o GitHub (use apenas Secrets no Streamlit Cloud)."
+    )
+    st.stop()
+
+# --- UI ---
 sheet_name = st.sidebar.selectbox("Escolha a aba", list(data.keys()))
-
 df = data[sheet_name]
+
 st.subheader(f"📂 Dados da aba: {sheet_name}")
 st.dataframe(df, use_container_width=True)
 
-# ---------------------------
-# Gráficos básicos
-# ---------------------------
 if "SATISFAÇÃO DO CLIENTE" in df.columns:
     st.subheader("📌 Satisfação dos Clientes")
     fig, ax = plt.subplots()
